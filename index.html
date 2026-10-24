@@ -11,7 +11,7 @@
 .leg{font-size:12px;color:var(--mu)}.leg i{display:inline-block;width:12px;height:10px;border-radius:2px;margin:0 3px 0 8px;vertical-align:-1px}
 #list{overflow:auto;flex:1;padding:6px 0}.it{padding:7px 14px;border-bottom:1px solid var(--ln);cursor:pointer}.it:hover{background:var(--bg)}.it b{font-weight:600}.it small{display:block;color:var(--mu);font-size:12px}
 #hint{padding:14px;color:var(--mu);font-size:13px}
-#map{width:100%;height:100%}#err{display:none;position:absolute;inset:0;background:var(--sf);padding:24px;z-index:9}
+#map{width:100%;height:100%}#map .dot.sm{width:7px!important;height:7px!important;border-width:1px!important}#err{display:none;position:absolute;inset:0;background:var(--sf);padding:24px;z-index:9}
 .dot{width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.6)}
 .dl{font:600 11px/1.2 sans-serif;color:#111;text-align:center;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none}
 .iw{padding:8px 10px;font-size:12px;line-height:1.5;min-width:170px;color:#111}
@@ -73,7 +73,7 @@ const QP=new URLSearchParams(location.hash.slice(1)||location.search),QID=QP.get
 function kmd(a,b){const R=6371,t=Math.PI/180,dy=(b.y-a.y)*t,dx=(b.x-a.x)*t*Math.cos((a.y+b.y)/2*t);return R*Math.sqrt(dx*dx+dy*dy)}
 function drawF(c){clear();legend();iw.close();const near=DATA.rows.filter(r=>r.id===c.id||kmd(c,r)<=QR);
  const C=new naver.maps.Circle({map,center:new naver.maps.LatLng(c.y,c.x),radius:QR*1000,strokeColor:'#e11',strokeOpacity:.6,strokeWeight:1,strokeStyle:'dash',fillColor:'#e11',fillOpacity:.04,clickable:false});ov.push(C);
- near.forEach(r=>{const me=r.id===c.id;poly(r,me);lbl(r,me);const m=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,title:r.n,zIndex:me?99:1,icon:{content:`<div class="dot${me?' sel':''}" style="background:${KC[r.k]||'#777'}"></div>`,anchor:new naver.maps.Point(me?12:8,me?12:8)}});
+ near.forEach(r=>{const me=r.id===c.id;poly(r,me);lbl(r,me);const m=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,title:r.n,zIndex:me?99:1,icon:{content:`<div class="dot${me?' sel':''}${(!r.pg&&r.lp)?' sm':''}" style="background:${KC[r.k]||'#777'}"></div>`,anchor:(!r.pg&&r.lp)?new naver.maps.Point(4,4):new naver.maps.Point(me?12:8,me?12:8)}});
   naver.maps.Event.addListener(m,'click',()=>{iw.setContent(info(r));iw.open(map,m)});mk.push(m);r.m=m});lblZoom();
  map.setSize(new naver.maps.Size(window.innerWidth,window.innerHeight));map.setCenter(new naver.maps.LatLng(c.y,c.x));map.setZoom(QR<=1?15:QR<=1.5?14:13);if(QP.get('cap')){naver.maps.Event.once(map,'tilesloaded',()=>setTimeout(()=>{window.__done=1},1200))}else setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
  document.getElementById('leg').innerHTML+=` · 반경 ${QR}km 안 ${near.length-1}곳`}
