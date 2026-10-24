@@ -15,7 +15,8 @@
 .dot{width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.6)}
 .dl{font:600 11px/1.2 sans-serif;color:#111;text-align:center;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none}
 .iw{padding:8px 10px;font-size:12px;line-height:1.5;min-width:170px;color:#111}
-@media(max-width:760px){#app{grid-template-columns:1fr;grid-template-rows:55% 45%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}}
+body.emb #app{grid-template-columns:1fr}body.emb #side{display:none}.dot.sel{width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 2px #e11,0 0 6px rgba(0,0,0,.7)}
+@media(max-width:760px){body.emb #app{grid-template-rows:1fr}#app{grid-template-columns:1fr;grid-template-rows:55% 45%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}}
 </style></head><body><div id="app"><div id="side"><div id="top"><h1>정비사업 지도 <small style="font-weight:400;color:var(--mu)">기준 2026-10-24</small></h1>
 <div class="seg"><button id="m-p" class="on">사업지</button><button id="m-h">동별 히트맵</button></div>
 <div class="seg" id="mm" style="display:none"><button id="c-chg" class="on">변화율</button><button id="c-lvl">수준</button></div><div class="leg" id="leg"></div></div>
@@ -55,6 +56,17 @@ function sel(d){const ps=d.rs.slice().sort((a,b)=>(b.lp||0)-(a.lp||0));
  side(`<div id="hint"><b style="color:inherit">${esc(d.gu)} ${esc(d.dn)}</b> · ${ps.length}곳 · 중앙값 ${fL(d.lvl)} · ${fC(d.chg)}</div>`+ps.map(r=>`<div class="it" data-i="${esc(r.id)}"><b>${esc(r.n)}</b><small>${esc(r.k)} · ${esc(r.st)} · 대지평당가 ${fL(r.lp)}${r.b>0&&r.lp!=null?' ('+fC(r.lp/r.b-1)+')':''} · 최저 ${r.lm!=null?r.lm+'억~':'-'}</small></div>`).join(''));
  map.setCenter(new naver.maps.LatLng(d.y,d.x));if(map.getZoom()<14)map.setZoom(14);
  document.querySelectorAll('.it').forEach(e=>e.onclick=()=>{const r=DATA.rows.find(x=>x.id===e.dataset.i);map.setCenter(new naver.maps.LatLng(r.y,r.x));map.setZoom(16);iw.setContent(info(r));iw.open(map,new naver.maps.LatLng(r.y,r.x))})}
+
+/* 상세 분석 삽입용: ?id=사업지ID&r=반경km&embed=1 */
+const QP=new URLSearchParams(location.search),QID=QP.get('id'),QR=Math.max(.3,Math.min(5,+QP.get('r')||1.5));
+function kmd(a,b){const R=6371,t=Math.PI/180,dy=(b.y-a.y)*t,dx=(b.x-a.x)*t*Math.cos((a.y+b.y)/2*t);return R*Math.sqrt(dx*dx+dy*dy)}
+function drawF(c){clear();legend();iw.close();const near=DATA.rows.filter(r=>r.id===c.id||kmd(c,r)<=QR);
+ const C=new naver.maps.Circle({map,center:new naver.maps.LatLng(c.y,c.x),radius:QR*1000,strokeColor:'#e11',strokeOpacity:.6,strokeWeight:1,strokeStyle:'dash',fillColor:'#e11',fillOpacity:.04,clickable:false});ov.push(C);
+ near.forEach(r=>{const me=r.id===c.id;const m=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,title:r.n,zIndex:me?99:1,icon:{content:`<div class="dot${me?' sel':''}" style="background:${KC[r.k]||'#777'}"></div>`,anchor:new naver.maps.Point(me?12:8,me?12:8)}});
+  const t=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,clickable:false,zIndex:me?98:0,icon:{content:`<div class="dl"${me?' style="font-size:13px"':''}>${esc(r.n)}</div>`,anchor:new naver.maps.Point(0,-8)}});
+  naver.maps.Event.addListener(m,'click',()=>{iw.setContent(info(r));iw.open(map,m)});mk.push(m,t);r.m=m});
+ map.fitBounds(C.getBounds(),{top:20,bottom:20,left:20,right:20});setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
+ document.getElementById('leg').innerHTML+=` · 반경 ${QR}km 안 ${near.length-1}곳`}
 function setMode(m){mode=m;document.getElementById('m-p').className=m==='p'?'on':'';document.getElementById('m-h').className=m==='h'?'on':'';document.getElementById('mm').style.display=m==='h'&&hasChg?'flex':'none';m==='p'?drawP():drawH()}
 window.navermap_authFailure=function(){document.getElementById('ou').textContent=location.origin;document.getElementById('err').style.display='block'};
 function init(){if(!window.naver||!naver.maps){navermap_authFailure();return}
@@ -62,6 +74,7 @@ function init(){if(!window.naver||!naver.maps){navermap_authFailure();return}
  document.getElementById('m-p').onclick=()=>setMode('p');document.getElementById('m-h').onclick=()=>setMode('h');
  document.getElementById('c-chg').onclick=()=>{metric='chg';document.getElementById('c-chg').className='on';document.getElementById('c-lvl').className='';drawH()};
  document.getElementById('c-lvl').onclick=()=>{metric='lvl';document.getElementById('c-lvl').className='on';document.getElementById('c-chg').className='';drawH()};
+ const c=QID&&DATA.rows.find(r=>r.id===QID);if(c){if(QP.get('embed')){document.body.classList.add('emb')}drawF(c);return}
  setMode('p')}
 window.addEventListener('load',()=>setTimeout(init,200));
 </script><script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=syc58c0gbx" onerror="navermap_authFailure()"></script></body></html>
