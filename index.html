@@ -20,6 +20,7 @@
 .lb2{font:600 10px/1.25 sans-serif;background:#fff;padding:0 5px;border-radius:0 0 3px 3px;border:1px solid;white-space:nowrap;margin-top:-1px}
 body.emb #app{grid-template-columns:1fr}body.emb #side{display:none}.dot.sel{width:18px;height:18px;border:3px solid #fff;box-shadow:0 0 0 2px #e11,0 0 6px rgba(0,0,0,.7)}
 @media(max-width:760px){body.emb #app{grid-template-rows:1fr}#app{grid-template-columns:1fr;grid-template-rows:55% 45%}#side{order:2;border-right:0;border-top:1px solid var(--ln)}}
+body.cap .naver-maps-notice,body.cap #err{}
 </style></head><body><div id="app"><div id="side"><div id="top"><h1>정비사업 지도 <small style="font-weight:400;color:var(--mu)">기준 2026-10-24</small></h1>
 <div class="seg"><button id="m-p" class="on">사업지</button><button id="m-h">동별 히트맵</button></div>
 <div class="seg" id="mm" style="display:none"><button id="c-chg" class="on">변화율</button><button id="c-lvl">수준</button></div><div class="leg" id="leg"></div></div>
@@ -47,7 +48,7 @@ function info(r){return `<div class="iw"><b>${esc(r.n)}</b> <span style="color:#
 
 
 let LB=[];function ctr(r){if(r.pg){let a=1e9,b=-1e9,c=1e9,d=-1e9;r.pg.forEach(g=>g.forEach(p=>{a=Math.min(a,p[0]);b=Math.max(b,p[0]);c=Math.min(c,p[1]);d=Math.max(d,p[1])}));return [(a+b)/2,(c+d)/2]}return [r.x,r.y]}
-function lbl(r,me){const col=KC[r.k]||'#777',c=ctr(r);const m=new naver.maps.Marker({position:new naver.maps.LatLng(c[1],c[0]),map,clickable:false,zIndex:me?90:10,icon:{content:`<div class="lw"><div class="lb${me?' me':''}" style="background:${col}">${esc(r.k)} ${esc(r.n)}</div><div class="lb2" style="color:${col};border-color:${col}">${esc(String(r.st).split('(')[0])}</div></div>`,anchor:new naver.maps.Point(0,0)}});LB.push(m);return m}
+function lbl(r,me){const col=KC[r.k]||'#777',c=ctr(r);const m=new naver.maps.Marker({position:new naver.maps.LatLng(c[1],c[0]),map,clickable:false,zIndex:me?90:10,icon:{content:`<div class="lw"><div class="lb${me?' me':''}" style="background:${col}">${esc(r.k)} ${esc(r.n)}</div><div class="lb2" style="color:${col};border-color:${col}">${esc(String(r.st).split('(')[0])}${r.pg?'':'<span style="color:#888;font-weight:400"> · 경계 미확정</span>'}</div></div>`,anchor:new naver.maps.Point(0,0)}});LB.push(m);return m}
 function lblZoom(){const on=!!QID||map.getZoom()>=14;LB.forEach(m=>m.setMap(on?map:null))}
 function poly(r,me){if(!r.pg)return;const col=KC[r.k]||'#777';const P=new naver.maps.Polygon({map,paths:r.pg.map(g=>g.map(c=>new naver.maps.LatLng(c[1],c[0]))),fillColor:col,fillOpacity:me?.6:.42,strokeColor:me?'#e11':col,strokeWeight:me?4:2.5,strokeOpacity:1,zIndex:me?5:2});
  naver.maps.Event.addListener(P,'click',()=>{iw.setContent(info(r));iw.setPosition(new naver.maps.LatLng(r.y,r.x));iw.open(map)});ov.push(P)}
@@ -74,7 +75,7 @@ function drawF(c){clear();legend();iw.close();const near=DATA.rows.filter(r=>r.i
  const C=new naver.maps.Circle({map,center:new naver.maps.LatLng(c.y,c.x),radius:QR*1000,strokeColor:'#e11',strokeOpacity:.6,strokeWeight:1,strokeStyle:'dash',fillColor:'#e11',fillOpacity:.04,clickable:false});ov.push(C);
  near.forEach(r=>{const me=r.id===c.id;poly(r,me);lbl(r,me);const m=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,title:r.n,zIndex:me?99:1,icon:{content:`<div class="dot${me?' sel':''}" style="background:${KC[r.k]||'#777'}"></div>`,anchor:new naver.maps.Point(me?12:8,me?12:8)}});
   naver.maps.Event.addListener(m,'click',()=>{iw.setContent(info(r));iw.open(map,m)});mk.push(m);r.m=m});lblZoom();
- map.fitBounds(C.getBounds(),{top:20,bottom:20,left:20,right:20});setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
+ map.fitBounds(C.getBounds(),{top:20,bottom:20,left:20,right:20});if(QP.get('cap')){naver.maps.Event.once(map,'tilesloaded',()=>setTimeout(()=>{window.__done=1},1200))}else setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
  document.getElementById('leg').innerHTML+=` · 반경 ${QR}km 안 ${near.length-1}곳`}
 function setMode(m){mode=m;document.getElementById('m-p').className=m==='p'?'on':'';document.getElementById('m-h').className=m==='h'?'on':'';document.getElementById('mm').style.display=m==='h'&&hasChg?'flex':'none';m==='p'?drawP():drawH()}
 window.navermap_authFailure=function(){document.getElementById('ou').textContent=location.origin;document.getElementById('err').style.display='block'};
@@ -83,7 +84,7 @@ function init(){if(!window.naver||!naver.maps){navermap_authFailure();return}
  document.getElementById('m-p').onclick=()=>setMode('p');document.getElementById('m-h').onclick=()=>setMode('h');
  document.getElementById('c-chg').onclick=()=>{metric='chg';document.getElementById('c-chg').className='on';document.getElementById('c-lvl').className='';drawH()};
  document.getElementById('c-lvl').onclick=()=>{metric='lvl';document.getElementById('c-lvl').className='on';document.getElementById('c-chg').className='';drawH()};
- const c=QID&&DATA.rows.find(r=>r.id===QID);if(c){if(QP.get('embed')){document.body.classList.add('emb')}drawF(c);return}
+ const c=QID&&DATA.rows.find(r=>r.id===QID);if(c){if(QP.get('embed')||QP.get('cap')){document.body.classList.add('emb')}drawF(c);return}
  setMode('p')}
 window.addEventListener('hashchange',()=>location.reload());window.addEventListener('load',()=>setTimeout(init,200));
 </script><script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=fbnoaz9khs" onerror="navermap_authFailure()"></script></body></html>
