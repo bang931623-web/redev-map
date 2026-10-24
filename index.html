@@ -75,7 +75,7 @@ function drawF(c){clear();legend();iw.close();const near=DATA.rows.filter(r=>r.i
  const C=new naver.maps.Circle({map,center:new naver.maps.LatLng(c.y,c.x),radius:QR*1000,strokeColor:'#e11',strokeOpacity:.6,strokeWeight:1,strokeStyle:'dash',fillColor:'#e11',fillOpacity:.04,clickable:false});ov.push(C);
  near.forEach(r=>{const me=r.id===c.id;poly(r,me);lbl(r,me);const m=new naver.maps.Marker({position:new naver.maps.LatLng(r.y,r.x),map,title:r.n,zIndex:me?99:1,icon:{content:`<div class="dot${me?' sel':''}" style="background:${KC[r.k]||'#777'}"></div>`,anchor:new naver.maps.Point(me?12:8,me?12:8)}});
   naver.maps.Event.addListener(m,'click',()=>{iw.setContent(info(r));iw.open(map,m)});mk.push(m);r.m=m});lblZoom();
- map.fitBounds(C.getBounds(),{top:20,bottom:20,left:20,right:20});if(QP.get('cap')){naver.maps.Event.once(map,'tilesloaded',()=>setTimeout(()=>{window.__done=1},1200))}else setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
+ map.setCenter(new naver.maps.LatLng(c.y,c.x));map.setZoom(QR<=1?15:QR<=1.5?14:13);if(QP.get('cap')){naver.maps.Event.once(map,'tilesloaded',()=>setTimeout(()=>{window.__done=1},1200))}else setTimeout(()=>{const r=DATA.rows.find(x=>x.id===c.id);iw.setContent(info(r));iw.open(map,r.m)},400);
  document.getElementById('leg').innerHTML+=` · 반경 ${QR}km 안 ${near.length-1}곳`}
 function setMode(m){mode=m;document.getElementById('m-p').className=m==='p'?'on':'';document.getElementById('m-h').className=m==='h'?'on':'';document.getElementById('mm').style.display=m==='h'&&hasChg?'flex':'none';m==='p'?drawP():drawH()}
 window.navermap_authFailure=function(){document.getElementById('ou').textContent=location.origin;document.getElementById('err').style.display='block'};
